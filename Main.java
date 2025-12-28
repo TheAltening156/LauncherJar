@@ -214,7 +214,6 @@ public class Main extends JFrame{
         btnAction.addActionListener(e -> {
         	btnAction.setEnabled(false);
         	nameField.setEnabled(false);
-        	CefBootstrap.init();
             try {
             	authenticator.loginWithAsyncWebview().thenAccept(result -> {
                 	if (result != null) {
@@ -226,6 +225,7 @@ public class Main extends JFrame{
                     	}
                 	} else {
                     	JOptionPane.showMessageDialog(null, "Veuillez r\u00e9executer le launcher pour executer la connexion microsoft de nouveau.", "Info", 1);
+                    	nameField.setEnabled(true);
                 	}
                 }).exceptionally(ex -> {
                     ex.printStackTrace();

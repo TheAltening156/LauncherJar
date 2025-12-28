@@ -2,6 +2,7 @@ package fr.litarvan.openauth.microsoft;
 
 import org.cef.CefApp;
 import org.cef.CefClient;
+import org.cef.CefSettings;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefMessageRouter;
 import org.cef.handler.CefLoadHandlerAdapter;
@@ -29,7 +30,10 @@ public class LoginFrameJCEF extends JFrame {
 
         // Initialisation de JCEF
         CefApp.startup(new String[0]); // Démarrage de JCEF
-        cefApp = CefApp.getInstance();
+        CefSettings settings = new CefSettings();
+        settings.windowless_rendering_enabled = false;
+        
+        cefApp = CefApp.getInstance(settings);
         client = cefApp.createClient();
 
         this.setLayout(new BorderLayout());
