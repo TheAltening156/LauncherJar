@@ -77,7 +77,8 @@ public class Main extends JFrame{
 		});
     	
     }
-    
+    String[] versions = new String[] {"1.8"};
+
     public Main() {
         // Configuration de la fenêtre
         setTitle("Honertis Launcher 1.2");
@@ -196,8 +197,13 @@ public class Main extends JFrame{
         bottomLinePanel.setLayout(new BoxLayout(bottomLinePanel, BoxLayout.X_AXIS));
         bottomLinePanel.setBackground(new Color(34, 34, 34));
         
-        String[] versions = getTagsVersions();
-        JComboBox<String> versionCombo = new JComboBox<>(versions);
+        JComboBox<String> versionCombo = new JComboBox<String>();
+        SwingUtilities.invokeLater(() -> {
+        	for (String ver : (versions = getTagsVersions())) 
+        		versionCombo.addItem(ver);
+        	
+        });
+                
         versionCombo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         versionCombo.setMaximumSize(new Dimension(120, 40));
         versionCombo.setPreferredSize(new Dimension(120, 40));
@@ -341,7 +347,7 @@ public class Main extends JFrame{
         }
     }
     
-    String owner = "TheAltening156";  // Replace with repo owner
+    String owner = "TheAltening156";
     String repo = "Honertis";   
     private String buildClasspath(String selectedVersion) {
         File libDir = new File(workdir, "lib");
@@ -475,27 +481,16 @@ public class Main extends JFrame{
                 conn.disconnect();
 
                 JsonArray tagsArray = JsonParser.parseString(content.toString()).getAsJsonArray();
-                List<TagInfo> tagList = new ArrayList<>();
-
+                List<String> tagList = new ArrayList<String>();
                 for (JsonElement tagElement : tagsArray) {
                     JsonObject tagObj = tagElement.getAsJsonObject();
                     String tagName = tagObj.get("name").getAsString();
                     if (tagName.contains("Honertis") || tagName.equals("1.3")) continue;
 
-                    // Récupérer la date du commit associé au tag
-                    String commitUrl = tagObj.getAsJsonObject("commit").get("url").getAsString();
-                    JsonObject commitObj = getJsonFromUrl(commitUrl);
-                    String dateStr = commitObj.getAsJsonObject("commit")
-                            .getAsJsonObject("author")
-                            .get("date").getAsString();
-                    ZonedDateTime date = ZonedDateTime.parse(dateStr, DateTimeFormatter.ISO_DATE_TIME);
-
-                    tagList.add(new TagInfo(tagName, date));
+                    tagList.add(tagName);
                 }
 
-                tagList.sort((a, b) -> b.date.compareTo(a.date));
-
-                return tagList.stream().map(t -> t.name).toArray(String[]::new);
+                return tagList.toArray(new String[] {"1.8"});
             } else {
                 System.out.println("Failed to fetch tags. Response code: " + responseCode);
             }
@@ -505,27 +500,6 @@ public class Main extends JFrame{
         return new String[] {"1.8"};
     }
 
-    private JsonObject getJsonFromUrl(String urlString) throws IOException {
-        URL url = new URL(urlString);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.setRequestProperty("Accept", "application/vnd.github.v3+json");
-
-        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-        StringBuilder content = new StringBuilder();
-        String inputLine;
-        while ((inputLine = in.readLine()) != null) content.append(inputLine);
-        in.close();
-        conn.disconnect();
-
-        return JsonParser.parseString(content.toString()).getAsJsonObject();
-    }
-
-    private static class TagInfo {
-        String name;
-        ZonedDateTime date;
-        TagInfo(String name, ZonedDateTime date) { this.name = name; this.date = date; }
-    }
 	public static void downloadNatives() throws IOException {
         String os = detectOS();
         String urlString = String.format("https://pixelpc.fr/honertis/natives/%s/natives.zip", os);
