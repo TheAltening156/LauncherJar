@@ -54,12 +54,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import fr.altening.utils.Utils;
-import fr.altening.utils.Utils.EnumOS;
 import fr.litarvan.openauth.microsoft.MicrosoftAuthenticator;
 
 @SuppressWarnings("serial")
 public class Main extends JFrame{
-	public static File workdir = new File(String.valueOf(System.getenv("APPDATA")) + "/.honertis");
+	public static File workdir = new File(Utils.getAppData() + "/.honertis");
     public static File jsonFile = new File(workdir, "versions/1.8.8/1.8.8.json");
     public Auth auth;
     public static Main window;
@@ -236,12 +235,14 @@ public class Main extends JFrame{
                 }).exceptionally(ex -> {
                     ex.printStackTrace();
                     JOptionPane.showMessageDialog(null, ex.getLocalizedMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
+                    nameField.setEnabled(true);
                     return null;
                 });
             }
             catch (Error exc) {
             	exc.printStackTrace();
-                JOptionPane.showMessageDialog(null, exc.getStackTrace());
+                JOptionPane.showMessageDialog(null, exc.getStackTrace(), "Erreur", JOptionPane.ERROR_MESSAGE);
+                nameField.setEnabled(true);
             }
         });
         launchButton.addActionListener(e -> {
