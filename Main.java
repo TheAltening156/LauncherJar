@@ -254,14 +254,17 @@ public class Main extends JFrame{
                 }
                 if (!username.isEmpty() && Utils.isValidMinecraftUsername(username)) {
                 	btnAction.setEnabled(false);
+                	launchButton.setEnabled(false);
                     this.auth = new Auth(username, "", "0", false);
                     this.startGame(versionCombo);
                     this.auth = null;
+                    launchButton.setEnabled(true);
                 }
             }
             if (this.auth != null && this.auth.isMicrosoftAccount()) {
             	launchButton.setEnabled(false);
                 this.startGame(versionCombo);
+                launchButton.setEnabled(true);
             }
         });
     }
