@@ -275,80 +275,91 @@ public class Main extends JFrame{
         }
 	}
     
-    public static void downloadLibraries() throws Exception {
-        if (!jsonFile.exists()) throw new FileNotFoundException("1.8.8.json manquant");
-
-        JSONObject root = new JSONObject(new String(Files.readAllBytes(jsonFile.toPath()), StandardCharsets.UTF_8));
-        JSONArray libraries = root.getJSONArray("libraries");
-
-        File libDir = new File(workdir, "lib");
-        if (!libDir.exists()) libDir.mkdirs();
-
-        for (int i = 0; i < libraries.length(); i++) {
-            JSONObject lib = libraries.getJSONObject(i);
-            String name = lib.getString("name");
-
-            // Ex: "com.google.code.gson:gson:2.2.4"
-            String[] parts = name.split(":");
-            if (parts.length < 3) continue;
-
-            String group = parts[0].replace('.', '/');
-            String artifact = parts[1];
-            String version = parts[2];
-
-            String path = group + "/" + artifact + "/" + version + "/" + artifact + "-" + version + ".jar";
-            String downloadUrl = null;
-            try {
-            	downloadUrl = lib.getJSONObject("downloads").getJSONObject("artifact").getString("url");
-            } catch (JSONException e) {
-            	
-            }
-            File dest = new File(libDir, artifact + "-" + version + ".jar");
-            if (!dest.exists()) {
-                try (InputStream in = new URL(downloadUrl).openStream()) {
-                    Files.copy(in, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    System.out.println("[OK] Lib téléchargée : " + artifact);
-                } catch (Exception e) {
-                    System.err.println("[Erreur] Échec lib : " + artifact);
-                }
-            }
-        }
+    public static void downloadLibraries() {
+		try {
+	        if (!jsonFile.exists()) throw new FileNotFoundException("1.8.8.json manquant");
+	        JSONObject root = new JSONObject(new String(Files.readAllBytes(jsonFile.toPath()), StandardCharsets.UTF_8));
+	        JSONArray libraries = root.getJSONArray("libraries");
+	
+	        File libDir = new File(workdir, "lib");
+	        if (!libDir.exists()) libDir.mkdirs();
+	
+	        for (int i = 0; i < libraries.length(); i++) {
+	            JSONObject lib = libraries.getJSONObject(i);
+	            String name = lib.getString("name");
+	
+	            // Ex: "com.google.code.gson:gson:2.2.4"
+	            String[] parts = name.split(":");
+	            if (parts.length < 3) continue;
+	
+	            String group = parts[0].replace('.', '/');
+	            String artifact = parts[1];
+	            String version = parts[2];
+	
+	            String path = group + "/" + artifact + "/" + version + "/" + artifact + "-" + version + ".jar";
+	            String downloadUrl = null;
+	            try {
+	            	downloadUrl = lib.getJSONObject("downloads").getJSONObject("artifact").getString("url");
+	            } catch (JSONException e) {
+	            	
+	            }
+	            File dest = new File(libDir, artifact + "-" + version + ".jar");
+	            if (!dest.exists()) {
+	            	try {
+						Utils.download(downloadUrl, dest);
+						System.out.println("[OK] Lib téléchargée : " + artifact);
+					} catch (IOException e) {
+						 System.err.println("[Erreur] Échec lib : " + artifact);
+					}
+	            }
+	        }
+		} catch (JSONException | IOException e) {
+			e.printStackTrace();
+		}
     }
-    public static void downloadAssets() throws Exception {
-        JSONObject root = new JSONObject(new String(Files.readAllBytes(jsonFile.toPath()), StandardCharsets.UTF_8));
-        String assetIndexName = root.getString("assets");
-
-        // Télécharger l’index
-        String assetIndexUrl = "https://pixelpc.fr/honertis/" + assetIndexName + ".json";
-        File indexFile = new File(workdir, "assets/indexes/" + assetIndexName + ".json");
-        if (!indexFile.exists()) {
-            indexFile.getParentFile().mkdirs();
-            try (InputStream in = new URL(assetIndexUrl).openStream()) {
-                Files.copy(in, indexFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                System.out.println("[OK] Index assets téléchargé.");
-            }
-        }
-
-        JSONObject index = new JSONObject(new String(Files.readAllBytes(indexFile.toPath()), StandardCharsets.UTF_8)).getJSONObject("objects");
-        File objectDir = new File(workdir, "assets/objects");
-
-        for (String key : index.keySet()) {
-            JSONObject entry = index.getJSONObject(key);
-            String hash = entry.getString("hash");
-            String subDir = hash.substring(0, 2);
-            String url = "https://resources.download.minecraft.net/" + subDir + "/" + hash;
-
-            File assetFile = new File(objectDir, subDir + "/" + hash);
-            if (!assetFile.exists()) {
-                assetFile.getParentFile().mkdirs();
-                try (InputStream in = new URL(url).openStream()) {
-                    Files.copy(in, assetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    System.out.println("[OK] Asset téléchargé : " + key);
-                } catch (Exception e) {
-                    System.err.println("[Erreur] Asset : " + key);
-                }
-            }
-        }
+    public static void downloadAssets() {
+    	try {
+	        JSONObject root = new JSONObject(new String(Files.readAllBytes(jsonFile.toPath()), StandardCharsets.UTF_8));
+	        String assetIndexName = root.getString("assets");
+	
+	        // Télécharger l’index
+	        String assetIndexUrl = "https://pixelpc.fr/honertis/" + assetIndexName + ".json";
+	        File indexFile = new File(workdir, "assets/indexes/" + assetIndexName + ".json");
+	        if (!indexFile.exists()) {
+	            indexFile.getParentFile().mkdirs();
+	            try {
+					Utils.download(assetIndexUrl, indexFile);
+					System.out.println("[OK] Index assets téléchargé.");
+				} catch (IOException e) {
+					System.out.println("[Erreur] Impossible de télécharger les index assets téléchargé.");
+					e.printStackTrace();
+				}
+	        }
+	
+	        JSONObject index = new JSONObject(new String(Files.readAllBytes(indexFile.toPath()), StandardCharsets.UTF_8)).getJSONObject("objects");
+	        File objectDir = new File(workdir, "assets/objects");
+	
+	        for (String key : index.keySet()) {
+	            JSONObject entry = index.getJSONObject(key);
+	            String hash = entry.getString("hash");
+	            String subDir = hash.substring(0, 2);
+	            String url = "https://resources.download.minecraft.net/" + subDir + "/" + hash;
+	
+	            File assetFile = new File(objectDir, subDir + "/" + hash);
+	            if (!assetFile.exists()) {
+	                assetFile.getParentFile().mkdirs();
+	                try {
+		                Utils.download(url, assetFile);
+	                    System.out.println("[OK] Asset téléchargé : " + key);
+	                } catch (Exception e) {
+	                    System.err.println("[Erreur] Asset : " + key);
+	                    e.printStackTrace();
+	                }
+	            }
+	        }
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    	}
     }
     
     String owner = "TheAltening156";
@@ -357,10 +368,11 @@ public class Main extends JFrame{
         File libDir = new File(workdir, "lib");
         if (!libDir.exists()) libDir.mkdirs();
         
-        try(InputStream in = new URL("https://github.com/" + owner + "/" + repo +"/releases/download/" + selectedVersion + "/Honertis." + selectedVersion + ".zip").openStream()) {
-        	Files.copy(in, Paths.get(workdir.getAbsolutePath() + "/Honertis" + selectedVersion + ".zip"), StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-			e.printStackTrace();
+        try {
+			Utils.download("https://github.com/" + owner + "/" + repo +"/releases/download/" + selectedVersion + "/Honertis." + selectedVersion + ".zip",
+						   new File(workdir.getAbsolutePath() + "/Honertis" + selectedVersion + ".zip"));
+		} catch (IOException e) {
+			 System.err.println("[Erreur] Impossible d'installer la version : Honertis" + selectedVersion + ".zip");
 		}
         
         try {
@@ -504,13 +516,15 @@ public class Main extends JFrame{
         return new String[] {"1.8"};
     }
 
-	public static void downloadNatives() throws IOException {
+	public static void downloadNatives() {
         String os = detectOS();
         String urlString = String.format("https://pixelpc.fr/honertis/natives/%s/natives.zip", os);
         File destZip = new File("natives.zip");        
-        // Télécharger le zip
-        try (InputStream in = new URL(urlString).openStream()) {
-            Files.copy(in, destZip.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        
+        try {
+            Utils.download(urlString, destZip);
+        } catch (Exception e) {
+        	e.printStackTrace();
         }
 
         // Créer le dossier pour les natives
@@ -533,6 +547,8 @@ public class Main extends JFrame{
                     }
                 }
             }
+        } catch (Exception e) {
+        	e.printStackTrace();
         }
 
         destZip.delete();

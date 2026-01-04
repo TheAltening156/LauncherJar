@@ -1,11 +1,12 @@
 package fr.altening.utils;
 
-import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 
 import org.apache.commons.io.FileUtils;
 
@@ -15,6 +16,12 @@ public class Utils {
 		return username.matches("^[a-zA-Z0-9_]{3,16}$");
 	}
 
+	public static void download(String url, File dest) throws IOException{
+		try (InputStream in = new URL(url).openStream()) {
+			Files.copy(in, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+		}
+	}
+	
 	public static void download(String url, File directory, String name) {
 		try {
 			saveFileFromUrlWithCommonsIO(String.valueOf(directory.toString()) + "/" + name, url);
@@ -27,18 +34,6 @@ public class Utils {
 	private static void saveFileFromUrlWithCommonsIO(String fileName, String fileUrl)
 			throws MalformedURLException, IOException {
 		FileUtils.copyURLToFile(new URL(fileUrl), new File(fileName));
-	}
-
-	public static boolean openWebpage(URI uri) {
-		Desktop desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;
-		if (desktop != null && desktop.isSupported(Desktop.Action.BROWSE))
-			try {
-				desktop.browse(uri);
-				return true;
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		return false;
 	}
 
 	public enum EnumOS {
