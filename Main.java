@@ -362,22 +362,27 @@ public class Main extends JFrame{
     	}
     }
     
-    String owner = "TheAltening156";
-    String repo = "Honertis";   
+    public String owner = "TheAltening156";
+    public String repo = "Honertis";   
+    
     private String buildClasspath(String selectedVersion) {
         File libDir = new File(workdir, "lib");
-        if (!libDir.exists()) libDir.mkdirs();
+        File zipFile = new File(workdir, "Honertis" + selectedVersion + ".zip");
+        
+        libDir.mkdirs();
         
         try {
 			Utils.download("https://github.com/" + owner + "/" + repo +"/releases/download/" + selectedVersion + "/Honertis." + selectedVersion + ".zip",
-						   new File(workdir.getAbsolutePath() + "/Honertis" + selectedVersion + ".zip"));
+						   zipFile);
 		} catch (IOException e) {
 			 System.err.println("[Erreur] Impossible d'installer la version : Honertis" + selectedVersion + ".zip");
+			 e.printStackTrace();
+			 return null;
 		}
         
         try {
-			extractSpecificFileFromZip(workdir.getAbsolutePath() + "/Honertis" + selectedVersion + ".zip", "Honertis " + selectedVersion + "/" + "Honertis " + selectedVersion + ".jar", libDir.getAbsolutePath() + "/Honertis " + selectedVersion + ".jar");
-			Files.delete(Paths.get(workdir.getAbsolutePath() + "/Honertis" + selectedVersion + ".zip"));
+			extractFromZip(zipFile, libDir, "Honertis " + selectedVersion + "/Honertis " + selectedVersion + ".jar");
+			zipFile.delete();
         } catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -389,10 +394,8 @@ public class Main extends JFrame{
         for (File file : files) {
             String name = file.getName();
 
-            // Inclure les libs communes (ne commencent pas par "Honertis-")
             boolean isCommon = !name.startsWith("Honertis ");
 
-            // Inclure les .jar de la version sélectionnée
             boolean isCorrectVersion = name.contains("Honertis " + selectedVersion);
 
             if (isCommon || isCorrectVersion) {
@@ -403,26 +406,42 @@ public class Main extends JFrame{
         return String.join(File.pathSeparator, classpathElements);
     }
     
-    public static void extractSpecificFileFromZip(String zipFilePath, String fileToExtract, String outputFilePath) throws IOException {
-        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFilePath))) {
-            ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null) {
-                if (entry.getName().equals(fileToExtract)) {
-                    // Crée le fichier de sortie
-                    try (FileOutputStream fos = new FileOutputStream(outputFilePath)) {
-                        byte[] buffer = new byte[4096];
-                        int len;
-                        while ((len = zis.read(buffer)) > 0) {
-                            fos.write(buffer, 0, len);
-                        }
-                    }
-                    zis.closeEntry();
-                    return;
-                }
-                zis.closeEntry();
-            }
-            throw new FileNotFoundException("Fichier " + fileToExtract + " non trouvé dans le ZIP.");
-        }
+    public static void extractFromZip(File zipFilePath, File outputDir, String specificFile) throws IOException {
+    	try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFilePath))) {
+    		ZipEntry entry;
+    		
+    		byte[] buffer = new byte[8192];
+    		while((entry = zis.getNextEntry()) != null) {
+    			if (entry.isDirectory()) {
+    				zis.closeEntry();
+    				continue;
+    			}
+    			
+    			if (specificFile != null && !entry.getName().equals(specificFile)) {
+    				zis.closeEntry();
+    				continue;
+    			}
+    			
+    			File outFile = (specificFile != null) ?
+    							new File(outputDir, specificFile) : 
+    							new File(outputDir, entry.getName());
+    			outFile.getParentFile().mkdirs();
+    			
+    			try (FileOutputStream fos = new FileOutputStream(outFile)){
+    				int len;
+    				while ((len = zis.read(buffer)) > 0) {
+    					fos.write(buffer, 0, len);
+    				}
+    			}
+    			zis.closeEntry();
+    			if (specificFile != null) {
+    				return;
+    			}
+    		}
+    	}
+    	if (specificFile != null) {
+    		throw new FileNotFoundException("Fichier " + specificFile + " introuvable dans le zip.");
+    	}
     }
     
     private void launch(Auth auth, String version) {
@@ -519,41 +538,22 @@ public class Main extends JFrame{
 	public static void downloadNatives() {
         String os = detectOS();
         String urlString = String.format("https://pixelpc.fr/honertis/natives/%s/natives.zip", os);
+        
         File destZip = new File("natives.zip");        
+        File nativesDir = new File(workdir.getAbsolutePath() + "/natives");
         
         try {
             Utils.download(urlString, destZip);
+            nativesDir.mkdirs();
+            
+            extractFromZip(destZip, nativesDir, null);
+            
+            destZip.delete();
+            System.out.println("Natives téléchargés et prêts !");
         } catch (Exception e) {
         	e.printStackTrace();
         }
-
-        // Créer le dossier pour les natives
-        File nativesDir = new File(workdir.getAbsolutePath() + "/natives");
-        if (!nativesDir.exists()) nativesDir.mkdirs();
-
-        // Extraire le zip
-        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(destZip))) {
-            ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null) {
-                if (!entry.isDirectory()) {
-                    File outFile = new File(nativesDir, entry.getName());
-                    outFile.getParentFile().mkdirs();
-                    try (FileOutputStream fos = new FileOutputStream(outFile)) {
-                        byte[] buffer = new byte[8192];
-                        int read;
-                        while ((read = zis.read(buffer)) != -1) {
-                            fos.write(buffer, 0, read);
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-        	e.printStackTrace();
-        }
-
-        destZip.delete();
-        System.out.println("Natives téléchargés et prêts !");
-    }
+	}
 
 	public static String detectOS() {
 	    switch (Utils.getOSType()) {
