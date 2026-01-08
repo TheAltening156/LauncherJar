@@ -60,6 +60,7 @@ import fr.litarvan.openauth.microsoft.MicrosoftAuthenticator;
 public class Main extends JFrame{
 	public static File workdir = new File(Utils.getAppData() + "/.honertis");
     public static File jsonFile = new File(workdir, "versions/1.8.8/1.8.8.json");
+    public String launcherVersion = "1.2.2";
     public Auth auth;
     public static Main window;
     public JTextField nameField;
@@ -80,7 +81,7 @@ public class Main extends JFrame{
 
     public Main() {
         // Configuration de la fenêtre
-        setTitle("Honertis Launcher 1.2");
+        setTitle("Honertis Launcher " + launcherVersion);
         setSize(500, 250);
         setLocationRelativeTo(null); // Centrer la fenêtre
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -110,36 +111,30 @@ public class Main extends JFrame{
         topBar.add(text, BorderLayout.CENTER);
         mainPanel.add(topBar, BorderLayout.PAGE_START);
 
-        // Titre
-        JLabel logoLabel = new JLabel("Honertis Launcher 1.2");
+        JLabel logoLabel = new JLabel("Honertis Launcher " + launcherVersion);
         logoLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         logoLabel.setForeground(Color.WHITE);
         logoLabel.setHorizontalAlignment(SwingConstants.CENTER);
         mainPanel.add(logoLabel, BorderLayout.NORTH);
 
-        // Panneau central vertical
         JPanel centerPanel = new JPanel();
         centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
         centerPanel.setBackground(new Color(34, 34, 34));
         mainPanel.add(centerPanel, BorderLayout.CENTER);
 
-        // Panel horizontal pour champ pseudo + bouton à droite
         JPanel nameLinePanel = new JPanel();
         nameLinePanel.setLayout(new BoxLayout(nameLinePanel, BoxLayout.X_AXIS));
         nameLinePanel.setBackground(new Color(34, 34, 34));
 
-        // Champ pseudo
         nameField = new JTextField();
         nameField.setFont(new Font("Segoe UI", Font.PLAIN, 15));
         nameField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         nameField.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
-        // Placeholder visuel
         String placeholder = "Pseudo (cracké)";
         nameField.setText(placeholder);
         nameField.setForeground(Color.GRAY);
 
-        // Comportement du placeholder
         nameField.addFocusListener(new FocusAdapter() {
             @Override
             public void focusGained(FocusEvent e) {
@@ -158,7 +153,6 @@ public class Main extends JFrame{
             }
         });
 
-        // Bouton à droite du champ
         btnAction = new JButton("Microsoft");
         btnAction.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btnAction.setPreferredSize(new Dimension(100, 40));
@@ -169,16 +163,13 @@ public class Main extends JFrame{
         btnAction.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnAction.setToolTipText("Connexion Microsoft");
 
-        // Ajout des composants à la ligne
         nameLinePanel.add(nameField);
-        nameLinePanel.add(Box.createRigidArea(new Dimension(10, 0))); // espacement
+        nameLinePanel.add(Box.createRigidArea(new Dimension(10, 0)));
         nameLinePanel.add(btnAction);
 
-        // Ajout du champ + bouton au panneau central
         centerPanel.add(nameLinePanel);
-        centerPanel.add(Box.createRigidArea(new Dimension(0, 20))); // espacement vertical
+        centerPanel.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        // Bouton Lancer le jeu
         launchButton = new JButton("Lancer le jeu");
         launchButton.setBackground(new Color(70, 130, 180));
         launchButton.setForeground(Color.WHITE);
@@ -188,7 +179,7 @@ public class Main extends JFrame{
         launchButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         launchButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         SwingUtilities.invokeLater(() -> {
-            launchButton.requestFocusInWindow(); // ou tout autre composant
+            launchButton.requestFocusInWindow();
         });
         
         centerPanel.add(launchButton);
@@ -217,6 +208,7 @@ public class Main extends JFrame{
         
         MicrosoftAuthenticator authenticator = new MicrosoftAuthenticator();
         btnAction.addActionListener(e -> {
+        	launchButton.setEnabled(false);
         	btnAction.setEnabled(false);
         	nameField.setEnabled(false);
             try {
@@ -244,6 +236,7 @@ public class Main extends JFrame{
                 JOptionPane.showMessageDialog(null, exc.getStackTrace(), "Erreur", JOptionPane.ERROR_MESSAGE);
                 nameField.setEnabled(true);
             }
+            launchButton.setEnabled(true);
         });
         launchButton.addActionListener(e -> {
             String username = nameField.getText().trim();
@@ -253,18 +246,16 @@ public class Main extends JFrame{
                     return;
                 }
                 if (!username.isEmpty() && Utils.isValidMinecraftUsername(username)) {
-                	btnAction.setEnabled(false);
                 	launchButton.setEnabled(false);
+                	btnAction.setEnabled(false);
                     this.auth = new Auth(username, "", "0", false);
                     this.startGame(versionCombo);
                     this.auth = null;
-                    launchButton.setEnabled(true);
                 }
             }
             if (this.auth != null && this.auth.isMicrosoftAccount()) {
             	launchButton.setEnabled(false);
                 this.startGame(versionCombo);
-                launchButton.setEnabled(true);
             }
         });
     }
@@ -475,11 +466,9 @@ public class Main extends JFrame{
 	            "--username", auth.getUsername(), 
 	            "--uuid", auth.isMicrosoftAccount() ? auth.getUuid() : "", 
 	            "--userProperties", "{}",
-	            "--launcherVersion","1"
+	            "--launcherVersion", launcherVersion
 	        );
-	        
-	        System.out.println("Builder : " + Arrays.asList(builder.command()));
-	        
+	        	        
 	        builder.directory(workdir);
 	        builder.inheritIO();
 	        Process process= null;
