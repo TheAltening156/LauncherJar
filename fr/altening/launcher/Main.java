@@ -1,4 +1,5 @@
 package fr.altening.launcher;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -60,7 +61,7 @@ import fr.litarvan.openauth.microsoft.MicrosoftAuthenticator;
 
 @SuppressWarnings("serial")
 public class Main extends JFrame{
-    public static String launcherVersion = "1.2.2";
+    public static String launcherVersion = "1.2.3";
     public Auth auth;
     public static Main window;
     public static JTextField nameField;
