@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -313,15 +314,40 @@ public class Utils {
 
 					tagList.add(tagName);
 				}
-
-				return tagList.toArray(new String[] { "1.8" });
+				tagList.sort((a, b) -> {
+					Version va = Version.parse(a);
+					Version vb = Version.parse(b);
+					if (va.major != vb.major) return Integer.compare(vb.major, vb.minor);
+					if (va.minor != vb.minor) return Integer.compare(vb.minor, vb.minor);
+					return Integer.compare(vb.update, va.update);
+				});
+				return tagList.toArray(new String[] { "1.8U1" });
 			} else {
 				System.out.println("[Launcher] Failed to fetch tags. Response code: " + responseCode);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return new String[] { "1.8" };
+		return new String[] { "1.8U1" };
+	}
+	
+	static class Version {
+	    int major;
+	    int minor;
+	    int update;
+
+	    static Version parse(String s) {
+	        Version v = new Version();
+
+	        String[] parts = s.split("U");
+	        String[] main = parts[0].split("\\.");
+
+	        v.major = Integer.parseInt(main[0]);
+	        v.minor = main.length > 1 ? Integer.parseInt(main[1]) : 0;
+	        v.update = parts.length > 1 ? Integer.parseInt(parts[1]) : 0;
+
+	        return v;
+	    }
 	}
 
 	public static boolean isValidMinecraftUsername(String username) {
@@ -337,7 +363,7 @@ public class Utils {
 	public static void download(String url, File directory, String name) {
 		try {
 			saveFileFromUrlWithCommonsIO(String.valueOf(directory.toString()) + "/" + name, url);
-			System.out.println("Finished downloading " + name);
+			System.out.println("[Launcher] Finished downloading " + name);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
