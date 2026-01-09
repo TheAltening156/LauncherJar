@@ -1,3 +1,4 @@
+package fr.altening.launcher;
 
 public class Auth {
 	private final String username;
