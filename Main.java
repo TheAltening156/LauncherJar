@@ -26,6 +26,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -322,7 +323,7 @@ public class Main extends JFrame{
 					Utils.download(assetIndexUrl, indexFile);
 					System.out.println("[OK] Index assets téléchargé.");
 				} catch (IOException e) {
-					System.out.println("[Erreur] Impossible de télécharger les index assets téléchargé.");
+					System.err.println("[Erreur] Impossible de télécharger les index assets téléchargé.");
 					e.printStackTrace();
 				}
 	        }
@@ -378,22 +379,23 @@ public class Main extends JFrame{
 			e.printStackTrace();
 		}
         
-        File[] files = libDir.listFiles((dir, name) -> name.endsWith(".jar"));
+        ArrayList<String> classpathElements = new ArrayList<String>();
+        try (Stream<Path> paths = Files.walk(libDir.toPath())) {
+        	paths.filter(Files::isRegularFile)
+        		 .filter(p -> p.getFileName().toString().endsWith(".jar"))
+        		 .forEach(path -> {
+        			 String name = path.getFileName().toString();
+        			 
+        			 boolean isHonertis = name.startsWith("Honertis ");
+        			 boolean isCorrectVersion = name.contains("Honertis " + selectedVersion);
 
-        ArrayList<String> classpathElements = new ArrayList<>();
-
-        for (File file : files) {
-            String name = file.getName();
-
-            boolean isCommon = !name.startsWith("Honertis ");
-
-            boolean isCorrectVersion = name.contains("Honertis " + selectedVersion);
-
-            if (isCommon || isCorrectVersion) {
-                classpathElements.add(file.getAbsolutePath());
-            }
+        			 if (!isHonertis || isCorrectVersion) {
+        				 classpathElements.add("" + path.toAbsolutePath());
+        			 }
+        		 });
+        } catch (Exception e) {
+        	e.printStackTrace();
         }
-
         return String.join(File.pathSeparator, classpathElements);
     }
     
@@ -516,7 +518,7 @@ public class Main extends JFrame{
 
                 return tagList.toArray(new String[] {"1.8"});
             } else {
-                System.out.println("Failed to fetch tags. Response code: " + responseCode);
+                System.out.println("[Launcher] Failed to fetch tags. Response code: " + responseCode);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -538,7 +540,7 @@ public class Main extends JFrame{
             extractFromZip(destZip, nativesDir, null);
             
             destZip.delete();
-            System.out.println("Natives téléchargés et prêts !");
+            System.out.println("[Launcher] Natives téléchargés et prêts !");
         } catch (Exception e) {
         	e.printStackTrace();
         }
