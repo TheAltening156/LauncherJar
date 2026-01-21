@@ -7,10 +7,14 @@ import org.cef.browser.CefBrowser;
 import org.cef.browser.CefMessageRouter;
 import org.cef.handler.CefLoadHandlerAdapter;
 
+import fr.altening.launcher.Main;
+
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 public class LoginFrameJCEF extends JFrame {
@@ -22,21 +26,34 @@ public class LoginFrameJCEF extends JFrame {
     private CefClient client;
     private CefBrowser browser;
 
-    public LoginFrameJCEF() {
+    public LoginFrameJCEF createLoginFrame() {
         this.setTitle("Microsoft Authentication");
         this.setSize(750, 750);
+        try {
+        	this.setIconImage(ImageIO.read(Main.class.getResource("/assets/icon32.png")).getScaledInstance(32, 32, 0));
+        } catch (IOException e) {
+        	e.printStackTrace();
+        }
         this.setLocationRelativeTo(null);
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
         // Initialisation de JCEF
-        CefApp.startup(new String[0]); // Démarrage de JCEF
+        CefApp.startup(new String[0]);
         CefSettings settings = new CefSettings();
         settings.windowless_rendering_enabled = false;
         
-        cefApp = CefApp.getInstance(settings);
-        client = cefApp.createClient();
-
-        this.setLayout(new BorderLayout());
+        try {
+	        cefApp = CefApp.getInstance(settings);
+	        client = cefApp.createClient();
+	
+	        this.setLayout(new BorderLayout());
+        } catch (UnsatisfiedLinkError exc) {
+            JOptionPane.showMessageDialog(this, exc.getStackTrace(), "Erreur", JOptionPane.ERROR_MESSAGE);
+	        Main.nameField.setEnabled(true);
+	        Main.launchButton.setEnabled(true);
+	    	exc.printStackTrace();
+        }
+        return this;
     }
 
     public CompletableFuture<String> start(String url) {
@@ -53,7 +70,6 @@ public class LoginFrameJCEF extends JFrame {
             }
         });
 
-        // Crée et ajoute le navigateur
         browser = client.createBrowser(url, false, false);
         this.add(browser.getUIComponent(), BorderLayout.CENTER);
 

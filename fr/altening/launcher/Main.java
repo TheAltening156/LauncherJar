@@ -95,7 +95,7 @@ public class Main extends JFrame{
         	e.printStackTrace();
         }
         
-        // Fond avec panneau personnalisé
+        // Fond avec panneau personnalis\u00e9
         JPanel mainPanel = new JPanel();
         mainPanel.setBackground(new Color(34, 34, 34));
         mainPanel.setLayout(new BorderLayout(0, 20));
@@ -134,7 +134,7 @@ public class Main extends JFrame{
         nameField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         nameField.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
-        String placeholder = "Pseudo (cracké)";
+        String placeholder = "Pseudo (crack\u00e9)";
         nameField.setText(placeholder);
         nameField.setForeground(Color.GRAY);
 
@@ -238,7 +238,7 @@ public class Main extends JFrame{
 		        	}
 	        	} else {
 	        		microsoftLoginFrame(authenticator);
-	        	}
+        		}
 	        } catch (IOException e1) {
 				e1.printStackTrace();
 			}
@@ -264,22 +264,15 @@ public class Main extends JFrame{
             }
         });
     }
-    public void microsoftLoginFrame(MicrosoftAuthenticator authenticator) {
-    	try {
-        	authenticator.loginWithAsyncWebview().thenAccept(result -> {
-            	loginMicrosoft(result);
-            }).exceptionally(ex -> {
-                ex.printStackTrace();
-                JOptionPane.showMessageDialog(this, ex.getLocalizedMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
-                nameField.setEnabled(true);
-                return null;
-            });
-        }
-        catch (Error exc) {
-        	exc.printStackTrace();
-            JOptionPane.showMessageDialog(this, exc.getStackTrace(), "Erreur", JOptionPane.ERROR_MESSAGE);
+    public void microsoftLoginFrame(MicrosoftAuthenticator authenticator){
+    	authenticator.loginWithAsyncWebview().thenAccept(result -> {
+        	loginMicrosoft(result);
+        }).exceptionally(ex -> {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, ex.getLocalizedMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
             nameField.setEnabled(true);
-        }
+            return null;
+        });
         launchButton.setEnabled(true);
 	}
 
@@ -294,14 +287,15 @@ public class Main extends JFrame{
             	} catch (IOException exception) {
             		exception.printStackTrace();
             	}
-            	JOptionPane.showMessageDialog(this, "Connecté avec le compte " + username, "Connexion avec succès !", 1);
+            	JOptionPane.showMessageDialog(this, "Connect\u00e9 avec le compte " + username, "Connexion avec succès !", 1);
         	} else {
                 JOptionPane.showMessageDialog(this, "Une erreur est survenue, veuillez r\u00e9essayer.", "Erreur", JOptionPane.ERROR_MESSAGE);
         	}
     	} else {
-        	JOptionPane.showMessageDialog(this, "Veuillez r\u00e9executer le launcher pour executer la connexion microsoft de nouveau.", "Info", 1);
+        	JOptionPane.showMessageDialog(this, "Veuillez r\u00e9executer le launcher pour utiliser la connexion microsoft de nouveau.", "Info", 1);
         	nameField.setEnabled(true);
     	}
+    	launchButton.setEnabled(true);
 	}
 
 	private void startGame(JComboBox<String> versionCombo) {

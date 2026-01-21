@@ -154,7 +154,7 @@ public class MicrosoftAuthenticator {
 
         String url = String.format("%s?%s", MICROSOFT_AUTHORIZATION_ENDPOINT, http.buildParams(getLoginParams()));
         //LoginFrame frame = new LoginFrame();
-        LoginFrameJCEF frame = new LoginFrameJCEF();
+        LoginFrameJCEF frame = new LoginFrameJCEF().createLoginFrame();
 
         return frame.start(url).thenApplyAsync(result -> {
             try {

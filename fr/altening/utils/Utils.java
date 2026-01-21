@@ -61,7 +61,7 @@ public class Utils {
 			extractFromZip(destZip, nativesDir, null);
 
 			destZip.delete();
-			System.out.println("[Launcher] Natives téléchargés et prêts !");
+			System.out.println("[Launcher] Natives t\u00e9l\u00e9charg\u00e9s et prêts !");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -102,9 +102,9 @@ public class Utils {
 				if (!dest.exists()) {
 					try {
 						download(downloadUrl, dest);
-						System.out.println("[OK] Lib téléchargée : " + artifact);
+						System.out.println("[OK] Lib t\u00e9l\u00e9charg\u00e9e : " + artifact);
 					} catch (IOException e) {
-						System.err.println("[Erreur] Échec lib : " + artifact);
+						System.err.println("[Erreur] \u00e9chec lib : " + artifact);
 					}
 				}
 			}
@@ -118,16 +118,16 @@ public class Utils {
 			JSONObject root = new JSONObject(new String(Files.readAllBytes(jsonFile.toPath()), StandardCharsets.UTF_8));
 			String assetIndexName = root.getString("assets");
 
-			// Télécharger l’index
+			// T\u00e9l\u00e9charger l’index
 			String assetIndexUrl = "https://pixelpc.fr/honertis/" + assetIndexName + ".json";
 			File indexFile = new File(workdir, "assets/indexes/" + assetIndexName + ".json");
 			if (!indexFile.exists()) {
 				indexFile.getParentFile().mkdirs();
 				try {
 					download(assetIndexUrl, indexFile);
-					System.out.println("[OK] Index assets téléchargé.");
+					System.out.println("[OK] Index assets t\u00e9l\u00e9charg\u00e9.");
 				} catch (IOException e) {
-					System.err.println("[Erreur] Impossible de télécharger les index assets téléchargé.");
+					System.err.println("[Erreur] Impossible de t\u00e9l\u00e9charger les index assets t\u00e9l\u00e9charg\u00e9.");
 					e.printStackTrace();
 				}
 			}
@@ -148,7 +148,7 @@ public class Utils {
 					assetFile.getParentFile().mkdirs();
 					try {
 						download(url, assetFile);
-						System.out.println("[OK] Asset téléchargé : " + key);
+						System.out.println("[OK] Asset t\u00e9l\u00e9charg\u00e9 : " + key);
 					} catch (Exception e) {
 						System.err.println("[Erreur] Asset : " + key);
 						e.printStackTrace();
@@ -255,9 +255,9 @@ public class Utils {
 
 			Main.window.setVisible(false);
 
-			System.out.println("[Launcher] Version sélectionnée : " + version);
+			System.out.println("[Launcher] Version s\u00e9lectionn\u00e9e : " + version);
 			String classpath = buildClasspath(version);
-			System.out.println("[Launcher] Classpath utilisé : " + classpath);
+			System.out.println("[Launcher] Classpath utilis\u00e9 : " + classpath);
 
 			ProcessBuilder builder = new ProcessBuilder(
 		            "java",
