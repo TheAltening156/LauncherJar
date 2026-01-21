@@ -5,9 +5,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -16,7 +20,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -29,11 +32,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import fr.altening.AccountData;
 import fr.altening.launcher.Auth;
 import fr.altening.launcher.Main;
 
@@ -412,4 +418,26 @@ public class Utils {
 			return new File(System.getProperty("user.home") + "/Library/Application Support");
 		return new File(System.getProperty("user.home"));
 	}
+	
+
+    public static File accountJson = new File(Utils.workdir, "accounts.json");
+
+	public static void saveAccount(String username, String refreshToken) throws IOException {
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        try (Writer writer = new FileWriter(accountJson)) {
+        	gson.toJson(new AccountData(username, refreshToken), writer);
+        }
+    }
+	
+	public static AccountData loadAccount() throws IOException {
+	    if (!accountJson.exists()) return null;
+	    
+	    Gson gson = new Gson();
+	    
+	    try (Reader reader = new FileReader(accountJson)) {
+	    	return gson.fromJson(reader, AccountData.class);
+	    }
+	}
+
+	
 }

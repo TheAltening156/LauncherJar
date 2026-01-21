@@ -56,12 +56,15 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import fr.altening.AccountData;
 import fr.altening.utils.Utils;
+import fr.litarvan.openauth.microsoft.MicrosoftAuthResult;
+import fr.litarvan.openauth.microsoft.MicrosoftAuthenticationException;
 import fr.litarvan.openauth.microsoft.MicrosoftAuthenticator;
 
 @SuppressWarnings("serial")
 public class Main extends JFrame{
-    public static String launcherVersion = "1.2.3";
+    public static String launcherVersion = "1.2.3BETA1";
     public Auth auth;
     public static Main window;
     public static JTextField nameField;
@@ -211,38 +214,40 @@ public class Main extends JFrame{
         	launchButton.setEnabled(false);
         	btnAction.setEnabled(false);
         	nameField.setEnabled(false);
-            try {
-            	authenticator.loginWithAsyncWebview().thenAccept(result -> {
-                	if (result != null) {
-                		if (this.auth == null) {
-                        	this.auth = new Auth(result.getProfile().getName(), result.getProfile().getId(), result.getAccessToken(), true);
-                        	JOptionPane.showMessageDialog(null, "Connecté avec le compte " + result.getProfile().getName(), "Connexion avec succès !", 1);
-                    	} else {
-                            JOptionPane.showMessageDialog(null, "Une erreur est survenue, veuillez r\u00e9essayer.", "Erreur", JOptionPane.ERROR_MESSAGE);
-                    	}
-                	} else {
-                    	JOptionPane.showMessageDialog(null, "Veuillez r\u00e9executer le launcher pour executer la connexion microsoft de nouveau.", "Info", 1);
-                    	nameField.setEnabled(true);
-                	}
-                }).exceptionally(ex -> {
-                    ex.printStackTrace();
-                    JOptionPane.showMessageDialog(null, ex.getLocalizedMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
-                    nameField.setEnabled(true);
-                    return null;
-                });
-            }
-            catch (Error exc) {
-            	exc.printStackTrace();
-                JOptionPane.showMessageDialog(null, exc.getStackTrace(), "Erreur", JOptionPane.ERROR_MESSAGE);
-                nameField.setEnabled(true);
-            }
-            launchButton.setEnabled(true);
+        	
+        	try {
+				AccountData account = Utils.loadAccount();
+		        if (account != null) {
+		        	int paneResult = JOptionPane.showConfirmDialog(this, "Voulez vous vous reconnecter au compte : " + account.username + " ?", "Reconnexion ?", JOptionPane.YES_NO_OPTION);
+		        	if (paneResult == JOptionPane.YES_OPTION) {
+						try {
+							loginMicrosoft(authenticator.loginWithRefreshToken(account.refreshToken));
+						} catch (MicrosoftAuthenticationException e1) {
+							e1.printStackTrace();
+		                    JOptionPane.showMessageDialog(this, e1.getStackTrace(), "Erreur", JOptionPane.ERROR_MESSAGE);
+							nameField.setEnabled(true);
+						}
+						
+		        	} else if (paneResult == JOptionPane.NO_OPTION) {
+		        		microsoftLoginFrame(authenticator);
+		        	} else {
+		        		btnAction.setEnabled(true);
+		        		nameField.setEnabled(true);
+		        		launchButton.setEnabled(true);
+		        		return;
+		        	}
+	        	} else {
+	        		microsoftLoginFrame(authenticator);
+	        	}
+	        } catch (IOException e1) {
+				e1.printStackTrace();
+			}
         });
         launchButton.addActionListener(e -> {
             String username = nameField.getText().trim();
             if (this.auth == null) {
                 if (username.isEmpty() || !Utils.isValidMinecraftUsername(username)) {
-                    JOptionPane.showMessageDialog(null, "Veuillez entrer un nom d'utilisateur valide.\nOu authentifiez vous avec votre compte microsoft.", "Erreur", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Veuillez entrer un nom d'utilisateur valide.\nOu authentifiez vous avec votre compte microsoft.", "Erreur", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
                 if (!username.isEmpty() && Utils.isValidMinecraftUsername(username)) {
@@ -259,7 +264,47 @@ public class Main extends JFrame{
             }
         });
     }
-    private void startGame(JComboBox<String> versionCombo) {
+    public void microsoftLoginFrame(MicrosoftAuthenticator authenticator) {
+    	try {
+        	authenticator.loginWithAsyncWebview().thenAccept(result -> {
+            	loginMicrosoft(result);
+            }).exceptionally(ex -> {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, ex.getLocalizedMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
+                nameField.setEnabled(true);
+                return null;
+            });
+        }
+        catch (Error exc) {
+        	exc.printStackTrace();
+            JOptionPane.showMessageDialog(this, exc.getStackTrace(), "Erreur", JOptionPane.ERROR_MESSAGE);
+            nameField.setEnabled(true);
+        }
+        launchButton.setEnabled(true);
+	}
+
+	public void loginMicrosoft(MicrosoftAuthResult result) {
+    	if (result != null) {
+    		if (this.auth == null) {
+    			String username = result.getProfile().getName();
+    			String refreshToken = result.getRefreshToken();
+            	this.auth = new Auth(username, result.getProfile().getId(), result.getAccessToken(), true);
+            	try {
+            		Utils.saveAccount(username, refreshToken);
+            	} catch (IOException exception) {
+            		exception.printStackTrace();
+            	}
+            	JOptionPane.showMessageDialog(this, "Connecté avec le compte " + username, "Connexion avec succès !", 1);
+        	} else {
+                JOptionPane.showMessageDialog(this, "Une erreur est survenue, veuillez r\u00e9essayer.", "Erreur", JOptionPane.ERROR_MESSAGE);
+        	}
+    	} else {
+        	JOptionPane.showMessageDialog(this, "Veuillez r\u00e9executer le launcher pour executer la connexion microsoft de nouveau.", "Info", 1);
+        	nameField.setEnabled(true);
+    	}
+	}
+
+	private void startGame(JComboBox<String> versionCombo) {
     	if (auth != null) {
             String selectedVersion = (String) versionCombo.getSelectedItem();
 			Utils.launch(auth, selectedVersion);

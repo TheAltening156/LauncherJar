@@ -18,6 +18,8 @@
  */
 package fr.litarvan.openauth.microsoft;
 
+import fr.altening.utils.Utils;
+
 /*
  * Ported from the amazing work of Alexis Bize on @xboxreplay/xboxlive-auth
  *
@@ -156,15 +158,40 @@ public class MicrosoftAuthenticator {
 
         return frame.start(url).thenApplyAsync(result -> {
             try {
-                if(result != null)
-                    return loginWithTokens(extractTokens(result),true);
-                else return null;
+                if(result == null) return null;
+                String code = extractValue(result, "code");
+                AuthTokens tkns = exchangeCodeForTokens(code);
+                
+                return loginWithTokens(tkns, true);
+                //return loginWithTokens(extractTokens(result),true);
             } catch (MicrosoftAuthenticationException e) {
                 throw new CompletionException(e);
             }
         });
     }
 
+    protected AuthTokens exchangeCodeForTokens(String code)
+            throws MicrosoftAuthenticationException {
+
+        Map<String, String> params = new HashMap<>();
+        params.put("client_id", XBOX_LIVE_CLIENT_ID);
+        params.put("grant_type", "authorization_code");
+        params.put("code", code);
+        params.put("redirect_uri", MICROSOFT_REDIRECTION_ENDPOINT);
+        params.put("scope", XBOX_LIVE_SERVICE_SCOPE + " offline_access");
+
+        MicrosoftRefreshResponse response = http.postFormGetJson(
+                MICROSOFT_TOKEN_ENDPOINT,
+                params,
+                MicrosoftRefreshResponse.class
+        );
+
+        return new AuthTokens(
+                response.getAccessToken(),
+                response.getRefreshToken()
+        );
+    }
+    
     /**
      * Logs in a player using a Microsoft account refresh token retrieved earlier.
      *
@@ -281,8 +308,8 @@ public class MicrosoftAuthenticator {
         Map<String, String> params = new HashMap<>();
         params.put("client_id", XBOX_LIVE_CLIENT_ID);
         params.put("redirect_uri", MICROSOFT_REDIRECTION_ENDPOINT);
-        params.put("scope", XBOX_LIVE_SERVICE_SCOPE);
-        params.put("response_type", "token");
+        params.put("response_type", "code");
+        params.put("scope", XBOX_LIVE_SERVICE_SCOPE + " offline_access");
 
         return params;
     }

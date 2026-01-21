@@ -64,7 +64,7 @@ public class LoginFrameJCEF extends JFrame {
                                              boolean canGoBack, boolean canGoForward) {
                 SwingUtilities.invokeLater(() -> {
                     String currentUrl = cefBrowser.getURL();
-                    if (currentUrl.contains("access_token")) {
+                    if (currentUrl.contains("code=")) {
                         future.complete(currentUrl);
                         completed = true;
                         disposeBrowser();
