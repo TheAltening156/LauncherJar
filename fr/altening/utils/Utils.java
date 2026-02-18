@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.Writer;
+import java.lang.reflect.InvocationTargetException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -26,6 +27,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import javax.management.RuntimeErrorException;
+import javax.swing.JLabel;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 
 import org.apache.commons.io.FileUtils;
 import org.json.JSONArray;
@@ -41,6 +45,7 @@ import com.google.gson.JsonParser;
 
 import fr.altening.AccountData;
 import fr.altening.launcher.Auth;
+import fr.altening.launcher.BootFrame;
 import fr.altening.launcher.Main;
 
 public class Utils {
@@ -49,15 +54,17 @@ public class Utils {
 
 	public static void downloadNatives() {
 		String os = detectOS();
-		String urlString = String.format("https://pixelpc.fr/honertis/natives/%s/natives.zip", os);
+		String urlString = String.format("https://github.com/TheAltening156/HonertisFiles/raw/refs/heads/main/natives/%s/natives.zip", os);
 
 		File destZip = new File("natives.zip");
 		File nativesDir = new File(workdir.getAbsolutePath() + "/natives");
 
 		try {
+			label.setText("Téléchargement");
+			label2.setText(destZip.toString());
 			download(urlString, destZip);
 			nativesDir.mkdirs();
-
+			
 			extractFromZip(destZip, nativesDir, null);
 
 			destZip.delete();
@@ -102,6 +109,8 @@ public class Utils {
 				if (!dest.exists()) {
 					try {
 						download(downloadUrl, dest);
+						label.setText("Téléchargement");
+						label2.setText(artifact + ".jar");
 						System.out.println("[OK] Lib t\u00e9l\u00e9charg\u00e9e : " + artifact);
 					} catch (IOException e) {
 						System.err.println("[Erreur] \u00e9chec lib : " + artifact);
@@ -113,13 +122,16 @@ public class Utils {
 		}
 	}
 
+	public static JLabel label;
+	public static JLabel label2;
+	
 	public static void downloadAssets() {
 		try {
 			JSONObject root = new JSONObject(new String(Files.readAllBytes(jsonFile.toPath()), StandardCharsets.UTF_8));
 			String assetIndexName = root.getString("assets");
 
-			// T\u00e9l\u00e9charger l’index
-			String assetIndexUrl = "https://pixelpc.fr/honertis/" + assetIndexName + ".json";
+			// Télécharger l’index
+			String assetIndexUrl = "https://raw.githubusercontent.com/TheAltening156/HonertisFiles/refs/heads/main/" + assetIndexName + ".json";
 			File indexFile = new File(workdir, "assets/indexes/" + assetIndexName + ".json");
 			if (!indexFile.exists()) {
 				indexFile.getParentFile().mkdirs();
@@ -148,6 +160,8 @@ public class Utils {
 					assetFile.getParentFile().mkdirs();
 					try {
 						download(url, assetFile);
+						label.setText("Téléchargement");
+						label2.setText(key);
 						System.out.println("[OK] Asset t\u00e9l\u00e9charg\u00e9 : " + key);
 					} catch (Exception e) {
 						System.err.println("[Erreur] Asset : " + key);
@@ -241,10 +255,21 @@ public class Utils {
 		return String.join(File.pathSeparator, classpathElements);
 	}
 
-	public static void launch(Auth auth, String version) {
+	public static void launch(Auth auth, String version) {		
+		Main.main.launchButton.setEnabled(false);
 		new Thread(() -> {
+			BootFrame boot = new BootFrame();
+			try {
+				SwingUtilities.invokeAndWait(() -> {
+					boot.setVisible(true);
+				});
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		    label = boot.label;
+            label2 = boot.label2;
 			File json = new File(workdir, "versions/1.8.8");
-			download("https://pixelpc.fr/honertis/1.8.8.json", json, "1.8.8.json");
+			download("https://raw.githubusercontent.com/TheAltening156/HonertisFiles/refs/heads/main/1.8.8.json", json, "1.8.8.json");
 			try {
 				downloadLibraries();
 				downloadAssets();
@@ -252,8 +277,10 @@ public class Utils {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-
-			Main.window.setVisible(false);
+			label.setText("Lancement du Jeu");
+			label2.setText("Lancement...");
+			boot.dispose();
+			Main.main.setVisible(false);
 
 			System.out.println("[Launcher] Version s\u00e9lectionn\u00e9e : " + version);
 			String classpath = buildClasspath(version);
@@ -272,10 +299,9 @@ public class Utils {
 		            "--username", auth.getUsername(), 
 		            "--uuid", auth.isMicrosoftAccount() ? auth.getUuid() : "", 
 		            "--userProperties", "{}",
-		            "--launcherVersion", Main.launcherVersion
+		            "--launcherVersion", Main.main.launcherVersion
 		        );
 			builder.directory(workdir);
-			builder.inheritIO();
 			Process process = null;
 			try {
 				process = builder.start();
@@ -283,12 +309,9 @@ public class Utils {
 			} catch (IOException | InterruptedException e) {
 				e.printStackTrace();
 			}
-			Main.window.setVisible(true);
+			Main.main.setVisible(true);
+			Main.main.launchButton.setEnabled(true);
 		}).start();
-		if (auth == null) {
-			Main.nameField.setEnabled(true);
-		}
-		Main.launchButton.setEnabled(true);
 	}
 	
 	public static String[] getTagsVersions() {

@@ -64,12 +64,12 @@ import fr.litarvan.openauth.microsoft.MicrosoftAuthenticator;
 
 @SuppressWarnings("serial")
 public class Main extends JFrame{
-    public static String launcherVersion = "1.2.3BETA1";
+    public String launcherVersion = "1.2.3BETA2";
     public Auth auth;
-    public static Main window;
-    public static JTextField nameField;
-    public static JButton launchButton;
-    public static JButton btnAction;
+    public static Main main;
+    public JTextField nameField;
+    public JButton launchButton;
+    public JButton btnAction;
     
     public static void main(String[] args) {
 		if (!Utils.workdir.exists()) {
@@ -77,7 +77,7 @@ public class Main extends JFrame{
 			System.out.println("[Launcher] Created " + Utils.workdir);
 		} 
 		SwingUtilities.invokeLater(() -> {
-			(window = new Main()).setVisible(true);
+			(main = new Main()).setVisible(true);
 		});
     	
     }
@@ -211,8 +211,8 @@ public class Main extends JFrame{
         
         MicrosoftAuthenticator authenticator = new MicrosoftAuthenticator();
         btnAction.addActionListener(e -> {
-        	launchButton.setEnabled(false);
         	btnAction.setEnabled(false);
+        	launchButton.setEnabled(false);
         	nameField.setEnabled(false);
         	
         	try {
@@ -251,7 +251,6 @@ public class Main extends JFrame{
                     return;
                 }
                 if (!username.isEmpty() && Utils.isValidMinecraftUsername(username)) {
-                	launchButton.setEnabled(false);
                 	btnAction.setEnabled(false);
                     this.auth = new Auth(username, "", "0", false);
                     this.startGame(versionCombo);
@@ -259,7 +258,6 @@ public class Main extends JFrame{
                 }
             }
             if (this.auth != null && this.auth.isMicrosoftAccount()) {
-            	launchButton.setEnabled(false);
                 this.startGame(versionCombo);
             }
         });
@@ -300,8 +298,7 @@ public class Main extends JFrame{
 
 	private void startGame(JComboBox<String> versionCombo) {
     	if (auth != null) {
-            String selectedVersion = (String) versionCombo.getSelectedItem();
-			Utils.launch(auth, selectedVersion);
+			Utils.launch(auth, (String) versionCombo.getSelectedItem());
         }
 	}
 }

@@ -49,8 +49,8 @@ public class LoginFrameJCEF extends JFrame {
 	        this.setLayout(new BorderLayout());
         } catch (UnsatisfiedLinkError exc) {
             JOptionPane.showMessageDialog(this, exc.getStackTrace(), "Erreur", JOptionPane.ERROR_MESSAGE);
-	        Main.nameField.setEnabled(true);
-	        Main.launchButton.setEnabled(true);
+	        Main.main.nameField.setEnabled(true);
+	        Main.main.launchButton.setEnabled(true);
 	    	exc.printStackTrace();
         }
         return this;
