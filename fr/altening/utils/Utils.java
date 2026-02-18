@@ -20,8 +20,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -269,7 +273,11 @@ public class Utils {
 		    label = boot.label;
             label2 = boot.label2;
 			File json = new File(workdir, "versions/1.8.8");
+			File logs = new File(workdir, "assets" + File.separator + "log_configs");
+			json.mkdirs();
+			logs.mkdirs();
 			download("https://raw.githubusercontent.com/TheAltening156/HonertisFiles/refs/heads/main/1.8.8.json", json, "1.8.8.json");
+			download("https://raw.githubusercontent.com/TheAltening156/HonertisFiles/refs/heads/main/client-1.7.xml", logs, "client-1.7.xml");
 			try {
 				downloadLibraries();
 				downloadAssets();
@@ -288,11 +296,14 @@ public class Utils {
 
 			ProcessBuilder builder = new ProcessBuilder(
 		            "java",
-		            "-Djava.library.path=" + workdir.getPath() + "/natives", 
+		            "-Djava.library.path=" + workdir.getAbsolutePath() + File.separator + "natives", 
 		            "-Djava.net.preferIPv4Stack=true",
+		            "-Dlog4j.configurationFile=" + new File(logs, "client-1.7.xml"),
+		            "-Dlog4j2.formatMsgNoLookups=true",
+		            "-Dlog4j2.stdout.layoutPattern=%d{HH:mm:ss} [%t/%level]: %msg%n",
 		            "-cp", classpath, "net.minecraft.client.main.Main", 
 		            "--version", "1.8.8", 
-		            "--gameDir", workdir.getPath(), 
+		            "--gameDir", workdir.getAbsolutePath(), 
 		            "--assetsDir", "assets", 
 		            "--assetIndex", "1.8", 
 		            "--accessToken", auth.getAccessToken(), 
@@ -302,13 +313,43 @@ public class Utils {
 		            "--launcherVersion", Main.main.launcherVersion
 		        );
 			builder.directory(workdir);
-			Process process = null;
+			
+			builder.redirectErrorStream(true);
 			try {
-				process = builder.start();
-				process.waitFor();
-			} catch (IOException | InterruptedException e) {
+				Process process = builder.start();
+				try (BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+					String line;
+					String currentLevel = "";
+					String currentThread = "";
+					long currentTimestamp = 0;
+
+					while((line = br.readLine()) != null) {
+						line = line.trim();
+					    if (line.startsWith("<log4j:Event")) {
+					        Matcher mLevel = Pattern.compile("level=\"(.*?)\"").matcher(line);
+					        if (mLevel.find()) currentLevel = mLevel.group(1);
+
+					        Matcher mThread = Pattern.compile("thread=\"(.*?)\"").matcher(line);
+					        if (mThread.find()) currentThread = mThread.group(1);
+
+					        Matcher mTime = Pattern.compile("timestamp=\"(\\d+)\"").matcher(line);
+					        if (mTime.find()) currentTimestamp = Long.parseLong(mTime.group(1));
+					    }
+
+					    else if (line.contains("<![CDATA[")) {
+					        line = line.replaceAll(".*<!\\[CDATA\\[", "").replaceAll("]]>.*", "");
+
+					        String timeStr = new SimpleDateFormat("HH:mm:ss").format(new Date(currentTimestamp));
+
+					        System.out.println("[" + timeStr + "]" + " [" + currentThread + "/" + currentLevel + "]: " + line.trim());
+					    }
+					}
+				} catch (Exception ignored) {}
+				
+			} catch (IOException e) {
 				e.printStackTrace();
 			}
+		
 			Main.main.setVisible(true);
 			Main.main.launchButton.setEnabled(true);
 		}).start();
