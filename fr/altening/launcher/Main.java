@@ -64,7 +64,7 @@ import fr.litarvan.openauth.microsoft.MicrosoftAuthenticator;
 
 @SuppressWarnings("serial")
 public class Main extends JFrame{
-    public String launcherVersion = "1.2.3BETA3";
+    public String launcherVersion = "1.2.4";
     public Auth auth;
     public static Main main;
     public JTextField nameField;
