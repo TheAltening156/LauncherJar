@@ -152,18 +152,21 @@ public class MicrosoftAuthenticator {
         if(!System.getProperty("java.version").startsWith("1."))
             CookieHandler.setDefault(new CookieManager());
 
-        String url = String.format("%s?%s", MICROSOFT_AUTHORIZATION_ENDPOINT, http.buildParams(getLoginParams()));
-        //LoginFrame frame = new LoginFrame();
-        LoginFrameJCEF frame = new LoginFrameJCEF().createLoginFrame();
-
-        return frame.start(url).thenApplyAsync(result -> {
+        String url = String.format("%s?%s", MICROSOFT_AUTHORIZATION_ENDPOINT, http.buildParams(getLoginParams()));        
+        CompletableFuture<String> frame = null;
+        try {
+			Class.forName("javafx.application.Platform");
+			frame = new LoginFrame().start(url);
+		} catch (ClassNotFoundException e) {
+			frame = new LoginFrameJCEF().createLoginFrame().start(url);
+		}
+        return frame.thenApplyAsync(result -> {
             try {
                 if(result == null) return null;
                 String code = extractValue(result, "code");
                 AuthTokens tkns = exchangeCodeForTokens(code);
                 
                 return loginWithTokens(tkns, true);
-                //return loginWithTokens(extractTokens(result),true);
             } catch (MicrosoftAuthenticationException e) {
                 throw new CompletionException(e);
             }
