@@ -8,32 +8,8 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-
 import javax.imageio.ImageIO;
-import javax.management.RuntimeErrorException;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -47,15 +23,6 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
 import fr.altening.AccountData;
 import fr.altening.utils.Utils;
 import fr.litarvan.openauth.microsoft.MicrosoftAuthResult;
@@ -64,7 +31,7 @@ import fr.litarvan.openauth.microsoft.MicrosoftAuthenticator;
 
 @SuppressWarnings("serial")
 public class Main extends JFrame{
-    public String launcherVersion = "1.2.4";
+    public String launcherVersion = "1.2.5";
     public Auth auth;
     public static Main main;
     public JTextField nameField;
@@ -90,7 +57,7 @@ public class Main extends JFrame{
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setResizable(false);
         try {
-        	setIconImage(ImageIO.read(Main.class.getResource("/assets/icon32.png")).getScaledInstance(32, 32, 0));
+        	setIconImage(ImageIO.read(getClass().getResource("/assets/icon32.png")).getScaledInstance(32, 32, 0));
         } catch (IOException e) {
         	e.printStackTrace();
         }
@@ -209,19 +176,26 @@ public class Main extends JFrame{
         bottomLinePanel.add(versionCombo);
         centerPanel.add(bottomLinePanel);
         
-        MicrosoftAuthenticator authenticator = new MicrosoftAuthenticator();
         btnAction.addActionListener(e -> {
         	btnAction.setEnabled(false);
         	launchButton.setEnabled(false);
         	nameField.setEnabled(false);
         	
         	try {
+				new MicrosoftFrame(Utils.loadAccount());
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+        	/*Main.main.launchButton.setEnabled(true);
+			Main.main.nameField.setEnabled(true);
+			Main.main.btnAction.setEnabled(true);*/
+        	/*try {
 				AccountData account = Utils.loadAccount();
-		        if (account != null) {
+		        if (Utils.accountJson.exists()) {
 		        	int paneResult = JOptionPane.showConfirmDialog(this, "Voulez vous vous reconnecter au compte : " + account.username + " ?", "Reconnexion ?", JOptionPane.YES_NO_OPTION);
 		        	if (paneResult == JOptionPane.YES_OPTION) {
 						try {
-							loginMicrosoft(authenticator.loginWithRefreshToken(account.refreshToken));
+							loginMicrosoft(new MicrosoftAuthenticator().loginWithRefreshToken(account.refreshToken));
 						} catch (MicrosoftAuthenticationException e1) {
 							e1.printStackTrace();
 		                    JOptionPane.showMessageDialog(this, e1.getStackTrace(), "Erreur", JOptionPane.ERROR_MESSAGE);
@@ -229,7 +203,7 @@ public class Main extends JFrame{
 						}
 						
 		        	} else if (paneResult == JOptionPane.NO_OPTION) {
-		        		microsoftLoginFrame(authenticator);
+		        		microsoftLoginFrame();
 		        	} else {
 		        		btnAction.setEnabled(true);
 		        		nameField.setEnabled(true);
@@ -237,11 +211,11 @@ public class Main extends JFrame{
 		        		return;
 		        	}
 	        	} else {
-	        		microsoftLoginFrame(authenticator);
+	        		microsoftLoginFrame();
         		}
 	        } catch (IOException e1) {
 				e1.printStackTrace();
-			}
+			}*/
         });
         launchButton.addActionListener(e -> {
             String username = nameField.getText().trim();
@@ -262,8 +236,8 @@ public class Main extends JFrame{
             }
         });
     }
-    public void microsoftLoginFrame(MicrosoftAuthenticator authenticator){
-    	authenticator.loginWithAsyncWebview().thenAccept(result -> {
+    public void microsoftLoginFrame() {
+    	new MicrosoftAuthenticator().loginWithAsyncWebview().thenAccept(result -> {
         	loginMicrosoft(result);
         }).exceptionally(ex -> {
             ex.printStackTrace();
@@ -288,6 +262,7 @@ public class Main extends JFrame{
             	JOptionPane.showMessageDialog(this, "Connect\u00e9 avec le compte " + username, "Connexion avec succès !", 1);
         	} else {
                 JOptionPane.showMessageDialog(this, "Une erreur est survenue, veuillez r\u00e9essayer.", "Erreur", JOptionPane.ERROR_MESSAGE);
+                auth = null;
         	}
     	} else {
         	JOptionPane.showMessageDialog(this, "Veuillez r\u00e9executer le launcher pour utiliser la connexion microsoft de nouveau.", "Info", 1);

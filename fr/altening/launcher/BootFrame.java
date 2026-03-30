@@ -5,7 +5,9 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.io.IOException;
 
+import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -27,6 +29,11 @@ public class BootFrame extends JFrame {
 	    setTitle("Launcher");
 	    setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 	    setSize(420, 120);
+	    try {
+        	this.setIconImage(ImageIO.read(getClass().getResource("/assets/icon32.png")).getScaledInstance(32, 32, 0));
+        } catch (IOException e) {
+        	e.printStackTrace();
+        }
 	    setResizable(false);
 	    setLocationRelativeTo(null);
 

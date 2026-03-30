@@ -12,7 +12,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.Writer;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -23,7 +23,10 @@ import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -33,7 +36,6 @@ import java.util.zip.ZipInputStream;
 import javax.management.RuntimeErrorException;
 import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
-import javax.swing.SwingWorker;
 
 import org.apache.commons.io.FileUtils;
 import org.json.JSONArray;
@@ -46,6 +48,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
 
 import fr.altening.AccountData;
 import fr.altening.launcher.Auth;
@@ -98,11 +101,11 @@ public class Utils {
 				if (parts.length < 3)
 					continue;
 
-				String group = parts[0].replace('.', '/');
+				//String group = parts[0].replace('.', '/');
 				String artifact = parts[1];
 				String version = parts[2];
 
-				String path = group + "/" + artifact + "/" + version + "/" + artifact + "-" + version + ".jar";
+				//String path = group + "/" + artifact + "/" + version + "/" + artifact + "-" + version + ".jar";
 				String downloadUrl = null;
 				try {
 					downloadUrl = lib.getJSONObject("downloads").getJSONObject("artifact").getString("url");
@@ -272,8 +275,8 @@ public class Utils {
 			}
 		    label = boot.label;
             label2 = boot.label2;
-			File json = new File(workdir, "versions/1.8.8");
-			File logs = new File(workdir, "assets" + File.separator + "log_configs");
+			File json = new File(new File(workdir, "versions"), "1.8.8");
+			File logs = new File(new File(workdir, "assets"), "log_configs");
 			json.mkdirs();
 			logs.mkdirs();
 			download("https://raw.githubusercontent.com/TheAltening156/HonertisFiles/refs/heads/main/1.8.8.json", json, "1.8.8.json");
@@ -302,13 +305,13 @@ public class Utils {
 		            "-Dlog4j2.formatMsgNoLookups=true",
 		            "-Dlog4j2.stdout.layoutPattern=%d{HH:mm:ss} [%t/%level]: %msg%n",
 		            "-cp", classpath, "net.minecraft.client.main.Main", 
-		            "--version", "1.8.8", 
-		            "--gameDir", workdir.getAbsolutePath(), 
+		            "--version", "release", 
+		            "--gameDir", new File(getAppData(), ".minecraft").getAbsolutePath(), 
 		            "--assetsDir", "assets", 
 		            "--assetIndex", "1.8", 
 		            "--accessToken", auth.getAccessToken(), 
 		            "--username", auth.getUsername(), 
-		            "--uuid", auth.isMicrosoftAccount() ? auth.getUuid() : "", 
+		            "--uuid", auth.isMicrosoftAccount() ? auth.getUuid() : UUID.randomUUID() + "", 
 		            "--userProperties", "{}",
 		            "--launcherVersion", Main.main.launcherVersion
 		        );
@@ -488,18 +491,33 @@ public class Utils {
 
 	public static void saveAccount(String username, String refreshToken) throws IOException {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        
+        Map<String, AccountData> accs = new HashMap<String, AccountData>();
+        
+        if (accountJson.exists()) {
+			try (Reader reader = new FileReader(accountJson)) {
+	            Type type = new TypeToken<Map<String, AccountData>>(){}.getType();
+	            Map<String, AccountData> existing = gson.fromJson(reader, type);
+	            if (existing != null) {
+	                accs = existing;
+		        }
+		    }
+		}
+        accs.put(username, new AccountData(username, refreshToken));
+        
         try (Writer writer = new FileWriter(accountJson)) {
-        	gson.toJson(new AccountData(username, refreshToken), writer);
+        	gson.toJson(accs, writer);
         }
     }
 	
-	public static AccountData loadAccount() throws IOException {
-	    if (!accountJson.exists()) return null;
-	    
+	public static Map<String, AccountData> loadAccount() throws IOException {
+		if (!accountJson.exists()) return new HashMap<>();
+
 	    Gson gson = new Gson();
-	    
+
 	    try (Reader reader = new FileReader(accountJson)) {
-	    	return gson.fromJson(reader, AccountData.class);
+	        Type type = new TypeToken<Map<String, AccountData>>(){}.getType();
+	        return gson.fromJson(reader, type);
 	    }
 	}
 

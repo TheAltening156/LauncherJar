@@ -29,7 +29,7 @@ public class LoginFrameJCEF extends JFrame {
         this.setTitle("Microsoft Authentication");
         this.setSize(750, 750);
         try {
-        	this.setIconImage(ImageIO.read(Main.class.getResource("/assets/icon32.png")).getScaledInstance(32, 32, 0));
+        	this.setIconImage(ImageIO.read(getClass().getResource("/assets/icon32.png")).getScaledInstance(32, 32, 0));
         } catch (IOException e) {
         	e.printStackTrace();
         }

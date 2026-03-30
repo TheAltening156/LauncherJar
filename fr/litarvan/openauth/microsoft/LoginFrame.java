@@ -26,8 +26,6 @@ import javafx.scene.web.WebView;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 
-import fr.altening.launcher.Main;
-
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
@@ -51,7 +49,7 @@ public class LoginFrame extends JFrame
         this.setTitle("Microsoft Authentication");
         this.setSize(750, 750);
         try {
-        	this.setIconImage(ImageIO.read(Main.class.getResource("/assets/icon32.png")).getScaledInstance(32, 32, 0));
+        	this.setIconImage(ImageIO.read(getClass().getResource("/assets/icon32.png")).getScaledInstance(32, 32, 0));
         } catch (IOException e) {
         	e.printStackTrace();
         }
