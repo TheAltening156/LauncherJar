@@ -61,13 +61,16 @@ public class MicrosoftFrame {
 
 			JButton yesButton = new JButton("Oui");
 			JButton noButton = new JButton("Non");
+			
+			if (Main.main.hasLogged) noButton.setEnabled(false);
+			
 			JButton cancelButton = new JButton("Annuler");
 			
 			JPanel buttonPanel = new JPanel();
 			buttonPanel.add(yesButton);
 			buttonPanel.add(noButton);
 			buttonPanel.add(cancelButton);
-
+			
 			yesButton.addActionListener(e -> {
 				String choix = (String) comboBox.getSelectedItem();
 				try {

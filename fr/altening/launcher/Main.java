@@ -9,6 +9,9 @@ import java.awt.Font;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -182,40 +185,15 @@ public class Main extends JFrame{
         	nameField.setEnabled(false);
         	
         	try {
-				new MicrosoftFrame(Utils.loadAccount());
+        		Map<String, AccountData> accs = Utils.loadAccounts();
+        		if (accs != Utils.noAccount)
+        			new MicrosoftFrame(accs);
+        		else 
+        			microsoftLoginFrame();
 			} catch (IOException e1) {
+				microsoftLoginFrame();
 				e1.printStackTrace();
 			}
-        	/*Main.main.launchButton.setEnabled(true);
-			Main.main.nameField.setEnabled(true);
-			Main.main.btnAction.setEnabled(true);*/
-        	/*try {
-				AccountData account = Utils.loadAccount();
-		        if (Utils.accountJson.exists()) {
-		        	int paneResult = JOptionPane.showConfirmDialog(this, "Voulez vous vous reconnecter au compte : " + account.username + " ?", "Reconnexion ?", JOptionPane.YES_NO_OPTION);
-		        	if (paneResult == JOptionPane.YES_OPTION) {
-						try {
-							loginMicrosoft(new MicrosoftAuthenticator().loginWithRefreshToken(account.refreshToken));
-						} catch (MicrosoftAuthenticationException e1) {
-							e1.printStackTrace();
-		                    JOptionPane.showMessageDialog(this, e1.getStackTrace(), "Erreur", JOptionPane.ERROR_MESSAGE);
-							nameField.setEnabled(true);
-						}
-						
-		        	} else if (paneResult == JOptionPane.NO_OPTION) {
-		        		microsoftLoginFrame();
-		        	} else {
-		        		btnAction.setEnabled(true);
-		        		nameField.setEnabled(true);
-		        		launchButton.setEnabled(true);
-		        		return;
-		        	}
-	        	} else {
-	        		microsoftLoginFrame();
-        		}
-	        } catch (IOException e1) {
-				e1.printStackTrace();
-			}*/
         });
         launchButton.addActionListener(e -> {
             String username = nameField.getText().trim();
@@ -243,11 +221,12 @@ public class Main extends JFrame{
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, ex.getLocalizedMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
             nameField.setEnabled(true);
+            btnAction.setEnabled(true);
+            launchButton.setEnabled(true);
             return null;
         });
-        launchButton.setEnabled(true);
 	}
-
+    public boolean hasLogged = false;
 	public void loginMicrosoft(MicrosoftAuthResult result) {
     	if (result != null) {
     		if (this.auth == null) {
@@ -266,9 +245,11 @@ public class Main extends JFrame{
         	}
     	} else {
         	JOptionPane.showMessageDialog(this, "Veuillez r\u00e9executer le launcher pour utiliser la connexion microsoft de nouveau.", "Info", 1);
+        	hasLogged = true;
         	nameField.setEnabled(true);
     	}
     	launchButton.setEnabled(true);
+    	btnAction.setEnabled(true);
 	}
 
 	private void startGame(JComboBox<String> versionCombo) {

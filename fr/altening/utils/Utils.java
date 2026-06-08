@@ -23,6 +23,7 @@ import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 import javax.management.RuntimeErrorException;
@@ -56,7 +58,7 @@ import fr.altening.launcher.BootFrame;
 import fr.altening.launcher.Main;
 
 public class Utils {
-	public static File workdir = new File(Utils.getAppData() + "/.honertis");
+	public static File workdir = new File(Utils.getAppData(), ".honertis");
 	public static File jsonFile = new File(workdir, "versions/1.8.8/1.8.8.json");
 
 	public static void downloadNatives() {
@@ -64,17 +66,30 @@ public class Utils {
 		String urlString = String.format("https://github.com/TheAltening156/HonertisFiles/raw/refs/heads/main/natives/%s/natives.zip", os);
 
 		File destZip = new File("natives.zip");
-		File nativesDir = new File(workdir.getAbsolutePath() + "/natives");
+		File nativesDir = new File(workdir.getAbsolutePath(), "natives");
 
 		try {
 			label.setText("Téléchargement");
 			label2.setText(destZip.toString());
-			download(urlString, destZip);
+			if (!destZip.exists())
+				download(urlString, destZip);
 			nativesDir.mkdirs();
 			
-			extractFromZip(destZip, nativesDir, null);
+			ZipFile zip = new ZipFile(destZip);
+			Enumeration<? extends ZipEntry> zipEntries = zip.entries();
+		    while (zipEntries.hasMoreElements()) {
+		        String fileName = zipEntries.nextElement().getName();
+		        File existingFile = new File(nativesDir, fileName);
+		        if (existingFile.exists()) {
+		        	continue;
+		        } else {
+		        	extractFromZip(destZip, nativesDir, fileName);
+		        	System.out.println("Extracted " + fileName);
+		        }
+		    }
+		    zip.close();
+		    
 
-			destZip.delete();
 			System.out.println("[Launcher] Natives t\u00e9l\u00e9charg\u00e9s et prêts !");
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -306,7 +321,7 @@ public class Utils {
 		            "-Dlog4j2.stdout.layoutPattern=%d{HH:mm:ss} [%t/%level]: %msg%n",
 		            "-cp", classpath, "net.minecraft.client.main.Main", 
 		            "--version", "release", 
-		            "--gameDir", new File(getAppData(), ".minecraft").getAbsolutePath(), 
+		            "--gameDir", getMinecraft().getAbsolutePath(), 
 		            "--assetsDir", "assets", 
 		            "--assetIndex", "1.8", 
 		            "--accessToken", auth.getAccessToken(), 
@@ -470,9 +485,9 @@ public class Utils {
 		case MACOS:
 			return "macos";
 		case SOLARIS:
-			throw new RuntimeErrorException(new Error("OS Not suported."));
+			throw new RuntimeErrorException(new Error("OS Not supported."));
 		case UNKNOWN:
-			throw new RuntimeErrorException(new Error("OS Not suported."));
+			throw new RuntimeErrorException(new Error("OS Not supported."));
 		}
 		return null;
 	}
@@ -482,12 +497,27 @@ public class Utils {
 		if (os == EnumOS.WINDOWS)
 			return new File(System.getenv("APPDATA"));
 		if (os == EnumOS.MACOS)
-			return new File(System.getProperty("user.home") + "/Library/Application Support");
+			return new File(new File(System.getProperty("user.home"), "Library"), "Application Support");
 		return new File(System.getProperty("user.home"));
 	}
 	
+	public static File getMinecraft() {
+		EnumOS os = getOSType();
+		String userHome = System.getProperty("user.home");
+		if (os == EnumOS.LINUX)
+			return new File(userHome, ".minecraft");
+		if (os == EnumOS.WINDOWS) {
+			String applicationData = System.getenv("APPDATA");
+			String folder = applicationData == null ? userHome : applicationData;
+			return new File(folder, ".minecraft");
+		}
+		if (os == EnumOS.MACOS)
+			return new File(new File(new File(userHome, "Library"), "Application Support"), "minecraft");
+		return new File(userHome, "minecraft");
+	}
 
     public static File accountJson = new File(Utils.workdir, "accounts.json");
+	public static Map<String, AccountData> noAccount = new HashMap<String, AccountData>();
 
 	public static void saveAccount(String username, String refreshToken) throws IOException {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -501,6 +531,9 @@ public class Utils {
 	            if (existing != null) {
 	                accs = existing;
 		        }
+		    } catch (Exception e) {
+		    	backupBadJson();
+		    	throw new IOException("Fichier json corrompu ou invalide.");
 		    }
 		}
         accs.put(username, new AccountData(username, refreshToken));
@@ -510,14 +543,53 @@ public class Utils {
         }
     }
 	
-	public static Map<String, AccountData> loadAccount() throws IOException {
-		if (!accountJson.exists()) return new HashMap<>();
+	public static void backupBadJson() throws IOException {
+		Files.move(
+    			accountJson.toPath(), 
+    			new File(workdir, "accountsBAD.json").toPath(),
+    			StandardCopyOption.REPLACE_EXISTING
+    	);
+	}
+	
+	public static Map<String, AccountData> loadAccounts() throws IOException {
+		if (!accountJson.exists()) 
+			return noAccount;
 
-	    Gson gson = new Gson();
+	    Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
 	    try (Reader reader = new FileReader(accountJson)) {
 	        Type type = new TypeToken<Map<String, AccountData>>(){}.getType();
-	        return gson.fromJson(reader, type);
+	        Map<String, AccountData> accounts = gson.fromJson(reader, type);
+	        if (accounts != null && !accounts.isEmpty()) {
+	        	return accounts;
+	        }
+	    }catch (Exception e) {
+	    	backupBadJson();
+	    	throw new IOException("Fichier json corrompu ou invalide.");
+	    }
+	    try (Reader reader = new FileReader(accountJson)) {
+	    	AccountData oldAccount = gson.fromJson(reader, AccountData.class);
+	    	
+	    	if (oldAccount == null || oldAccount.getUsername() == null) {
+	    		throw new IOException("Ancen format invalide.");
+	    	}
+	    	
+	    	Files.copy(
+	    			accountJson.toPath(),
+	    			new File(workdir, "accounts.json.bak").toPath(), 
+	    			StandardCopyOption.REPLACE_EXISTING
+	    	);
+	    	
+	    	Map<String, AccountData> accounts = new HashMap<String, AccountData>();
+	    	accounts.put(oldAccount.getUsername(), oldAccount);
+	    	
+	    	try (Writer writer = new FileWriter(accountJson)) {
+	    		gson.toJson(accounts, writer);
+	    	}
+	    	return accounts;
+	    } catch (Exception e) {
+	    	backupBadJson();
+	    	throw new IOException("Impossible de charger ou de convertir accounts.json", e);
 	    }
 	}
 
